@@ -1,0 +1,120 @@
+---
+title: "Titanic survivors"
+author: "Michel Mariën"
+date: "21 november 2018"
+output: 
+  ioslides_presentation: 
+    fig_caption: yes
+    keep_md: yes
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(plotly)
+library(ggplot2)
+library(ggrepel)
+
+```
+
+## Surviving the Titanic
+
+In this document we're going to explore the question whether women had preferential treatment during
+the evacuation of Titanic and thus a higher chance of survival
+
+```{r survival,fig.align="center",out.width="100%"}
+
+Titanic_surv<- as.data.frame(Titanic) %>% group_by(Survived) %>% 
+  summarise(Surv_sum=sum(Freq))%>% 
+  mutate(Surv=Surv_sum/sum(Surv_sum))
+
+colors <- c("red", "green")
+
+plot_ly(Titanic_surv, labels = ~Survived, values = ~Surv, type = 'pie',
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste(round(Surv*100,2), "%"),
+        marker = list(colors = colors,
+                      line = list(color = '#FFFFFF', width = 1)),
+                      #The 'pull' attribute can also be used to create space between the sectors
+        showlegend = FALSE) %>%
+  layout(title = 'Survival rate Titanic',
+         xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+         yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+```
+
+## Data exploration
+
+We are going to look at several factors that might shed some light on chance of survival
+
+- Sex
+- Age
+- Class
+
+## Survival chances based on Sex
+
+```{r Sex,fig.align="center",out.width="100%"}
+
+Titanic_surv_sex<- as.data.frame(Titanic) %>% group_by(Sex,Survived) %>% 
+  summarise(Surv_sum=sum(Freq))%>% 
+  mutate(Sex_surv=Surv_sum/sum(Surv_sum))
+
+splitted_list <- split(Titanic_surv_sex, Titanic_surv_sex$Sex)
+
+plot_list <- lapply(splitted_list, plot_ly, x = ~Survived, y = ~Sex_surv, type = "bar", text = ~paste(Sex,round(Sex_surv*100,2), '%'),hoverinfo = 'text',showlegend = FALSE)
+
+plot_list2 <- lapply(plot_list,layout,title="Bar chart with survival rates for Males (left) and Females (right)")
+
+
+subplot(plot_list2,nrows=1, margin = .05)
+```
+ 
+<font size="4"> One can conclude from the chart above that being a woman significantly improved 
+your chances of survival </font>
+ 
+## Survival chances based on Age
+
+```{r age,fig.align="center",out.width="100%",warning=FALSE}
+
+Titanic_surv_sex<- as.data.frame(Titanic) %>% group_by(Sex,Age,Survived) %>% 
+  summarise(Surv_sum=sum(Freq))%>% 
+  mutate(Sex_surv=Surv_sum/sum(Surv_sum))
+
+#colors <- c("red", "green","blue")
+#,showlegend = FALSE,marker = list(colors = colors)
+splitted_list <- split(Titanic_surv_sex, Titanic_surv_sex$Sex)
+
+plot_list <- lapply(splitted_list, plot_ly, x = ~Age, y = ~Sex_surv,color=~Survived, type = "bar", text = ~paste(Survived,round(Sex_surv*100,1), '%'),hoverinfo = 'text',showlegend = FALSE)
+
+#plot_list2 <- lapply(plot_list,add_annotations,xref = 'x', yref = 'y',x = ~Age, y = ~Sex_surv,text = ~Survived,showarrow = FALSE)
+
+plot_list2 <- lapply(plot_list,layout,title="Bar chart with survival rates for Males (left) and Females (right)", barmode = 'stack')
+
+subplot(plot_list2,nrows=1, margin = .05)
+
+```
+
+<font size="4"> Being a child improves your chances of survival as a male but being a child and female does not improve your chances in comparison to adult females </font>
+
+ 
+## Survival chances based on Class
+ 
+```{r class,fig.align="center",out.width="100%",warning=FALSE}
+
+Titanic_surv_sex<- as.data.frame(Titanic) %>% group_by(Sex,Class,Age,Survived) %>% 
+  summarise(Surv_sum=sum(Freq))%>% 
+  mutate(Sex_surv=Surv_sum/sum(Surv_sum))
+
+splitted_list <- split(Titanic_surv_sex, list(Titanic_surv_sex$Sex,Titanic_surv_sex$Age))
+
+plot_list <- lapply(splitted_list, plot_ly, x = ~Class, y = ~Sex_surv,color=~Survived, type = "bar", text = ~paste(Sex,Age,Survived,round(Sex_surv*100,1), '%'),hoverinfo = 'text',showlegend = FALSE)
+
+plot_list2 <- lapply(plot_list,layout,title="Bar chart with survival rates per class for Children (left) and Adults (right)", barmode = 'stack')
+
+subplot(plot_list2,nrows=1, margin = .05)
+
+```
+
+<font size="3"> Apparently, if you traveled in first of second class, you had the highest change of survival. Being a child in those classes (males and females) gave you a 100% change of living another day. It seems that passengers in the higher classes got a preferential treatment not females  </font>
